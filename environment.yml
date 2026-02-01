@@ -1,0 +1,21 @@
+name: graphdta
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.8
+  - pytorch
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - networkx
+  - rdkit
+  - pip
+  - pip:
+      - torch-geometric
+      - torch-scatter
+      - torch-sparse
+      - torch-cluster
+
