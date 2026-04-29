@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphDTA Frontend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <span class="brand-mark">G</span>
+            <div>
+              <p class="eyebrow">GraphDTA Workspace</p>
+              <h1>Drug-Target Affinity Dashboard</h1>
+            </div>
+          </div>
+          <a class="ghost-link" href="#artifacts">Latest Output</a>
+        </nav>
+
+        <div class="hero-grid hero-grid--wide">
+          <section class="hero-copy">
+            <p class="eyebrow">Primary User Flow</p>
+            <h2>Paste a protein sequence, click run, and get the best drug candidates.</h2>
+            <p class="hero-text">
+              This first frontend version is centered on the exact flow you
+              want: protein input first, then prediction, then the top-ranked
+              drug list. The rest of the dashboard explains the model and the
+              saved evaluation evidence around that core action.
+            </p>
+          </section>
+
+          <aside class="hero-panel hero-panel--form">
+            <p class="panel-label">Protein Query</p>
+            <form id="ranking-form" class="ranking-form">
+              <label class="input-group">
+                <span>Protein Sequence</span>
+                <textarea
+                  id="protein-sequence"
+                  name="protein_sequence"
+                  rows="6"
+                  placeholder="Enter amino-acid sequence, for example: MKWVTFISLLFLFSSAYS"
+                >MKWVTFISLLFLFSSAYS</textarea>
+              </label>
+
+              <label class="input-group input-group--small">
+                <span>Top N Drugs</span>
+                <input id="top-n" name="top_n" type="number" min="1" max="10" value="3" />
+              </label>
+
+              <button type="submit" class="button button-primary button-block">
+                Run Prediction
+              </button>
+            </form>
+
+            <p class="form-note">
+              Run this app with the GraphDTA Python environment active so the
+              ranking model can execute.
+            </p>
+          </aside>
+        </div>
+      </header>
+
+      <main>
+        <section class="section" id="results">
+          <div class="section-heading">
+            <p class="eyebrow">Prediction Output</p>
+            <h3>Best N drug list for the submitted protein</h3>
+          </div>
+
+          <div class="results-status" id="results-status">
+            Enter a protein sequence and click <strong>Run Prediction</strong>.
+          </div>
+
+          <div class="best-candidate-card best-candidate-card--hidden" id="best-candidate-card">
+            <div class="best-candidate-copy">
+              <p class="eyebrow">Best Candidate</p>
+              <h3 id="best-candidate-rank">Rank 1</h3>
+              <strong id="best-candidate-score">0.0000</strong>
+              <p class="best-candidate-label">Predicted Affinity</p>
+            </div>
+            <div class="best-candidate-smiles">
+              <p class="eyebrow">Chemical Name / SMILES</p>
+              <code id="best-candidate-smiles">No prediction yet.</code>
+            </div>
+          </div>
+
+          <div class="results-grid" id="results-grid"></div>
+
+          <div class="results-table-wrap results-table-wrap--hidden" id="results-table-wrap">
+            <div class="section-heading compact">
+              <p class="eyebrow">Top N Table</p>
+              <h3>Ranked result summary</h3>
+            </div>
+            <div class="results-table-scroll">
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Predicted Affinity</th>
+                    <th>Chemical Name / SMILES</th>
+                  </tr>
+                </thead>
+                <tbody id="results-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="overview">
+          <div class="section-heading">
+            <p class="eyebrow">Project Snapshot</p>
+            <h3>What this interface currently provides</h3>
+          </div>
+          <div class="feature-grid" id="feature-grid"></div>
+        </section>
+
+        <section class="section" id="workflow">
+          <div class="section-heading">
+            <p class="eyebrow">Pipeline View</p>
+            <h3>How the repository supports the prediction flow</h3>
+          </div>
+          <div class="workflow-board" id="workflow-board"></div>
+        </section>
+
+        <section class="section" id="metrics">
+          <div class="section-heading">
+            <p class="eyebrow">Evaluation Dashboard</p>
+            <h3>Saved DAVIS performance metrics</h3>
+          </div>
+          <div class="metrics-grid" id="metrics-grid"></div>
+          <div class="analysis-strip">
+            <div>
+              <p class="analysis-label">Interpretation</p>
+              <p id="metrics-summary"></p>
+            </div>
+            <div class="analysis-chip">
+              <span>Regression task</span>
+              <span>Ranking-aware</span>
+              <span>Artifact-backed</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="section dual-panel">
+          <article class="panel panel-glow">
+            <div class="section-heading compact">
+              <p class="eyebrow">Dataset Context</p>
+              <h3>DAVIS benchmark composition</h3>
+            </div>
+            <div class="dataset-grid" id="dataset-grid"></div>
+          </article>
+
+          <article class="panel panel-dark">
+            <div class="section-heading compact">
+              <p class="eyebrow">Architecture Summary</p>
+              <h3>Current model shape</h3>
+            </div>
+            <div class="architecture-list" id="architecture-list"></div>
+          </article>
+        </section>
+
+        <section class="section" id="artifacts">
+          <div class="section-heading">
+            <p class="eyebrow">Visual Output</p>
+            <h3>Dynamic prediction artifact</h3>
+          </div>
+          <div class="artifact-grid artifact-grid--single" id="artifact-grid">
+            <div class="artifact-placeholder" id="artifact-placeholder">
+              The ranking chart will appear here after a successful run.
+            </div>
+            <figure class="artifact-card artifact-card--hidden" id="ranking-artifact-card">
+              <img id="ranking-artifact-image" src="" alt="Latest ranked drug candidates chart" />
+              <figcaption>
+                <strong>Latest Top Ranked Drug Candidates</strong>
+                This chart is refreshed only after the prediction finishes successfully.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

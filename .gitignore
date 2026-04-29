@@ -7,3 +7,17 @@ data/processed/davis_train.pt
 data/processed/kiba_test.pt
 data/processed/kiba_train.pt
 
+# Editor and local workspace files
+.vscode/
+.codex/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local documents and reports
+*.docx
+*.pdf
+*.dcx
