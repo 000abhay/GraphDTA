@@ -38,7 +38,7 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path != "/api/rank":
+        if path not in {"/api/rank", "/api/score"}:
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown endpoint.")
             return
 
@@ -50,27 +50,42 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
             return
 
         protein = payload.get("protein_sequence", "")
-        top_n = payload.get("top_n", 3)
-
         if not str(protein).strip():
             self.respond_json({"error": "Protein sequence is required."}, status=HTTPStatus.BAD_REQUEST)
             return
 
-        try:
-            top_n = max(1, min(10, int(top_n)))
-        except (TypeError, ValueError):
-            self.respond_json({"error": "top_n must be a valid integer."}, status=HTTPStatus.BAD_REQUEST)
-            return
+        if path == "/api/rank":
+            top_n = payload.get("top_n", 3)
+            try:
+                top_n = max(1, min(10, int(top_n)))
+            except (TypeError, ValueError):
+                self.respond_json({"error": "top_n must be a valid integer."}, status=HTTPStatus.BAD_REQUEST)
+                return
 
-        command = [
-            sys.executable,
-            str(ROOT / "rank_drugs.py"),
-            "--protein",
-            str(protein),
-            "--top-n",
-            str(top_n),
-            "--json",
-        ]
+            command = [
+                sys.executable,
+                str(ROOT / "rank_drugs.py"),
+                "--protein",
+                str(protein),
+                "--top-n",
+                str(top_n),
+                "--json",
+            ]
+        else:
+            smiles = payload.get("smiles", "")
+            if not str(smiles).strip():
+                self.respond_json({"error": "Drug SMILES is required."}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            command = [
+                sys.executable,
+                "-c",
+                (
+                    "import json; "
+                    "from rank_drugs import score_drug_target_pair; "
+                    f"print(json.dumps(score_drug_target_pair({protein!r}, {str(smiles)!r})))"
+                ),
+            ]
 
         try:
             completed = subprocess.run(
@@ -105,6 +120,13 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
                     "details": completed.stdout,
                 },
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+            return
+
+        if "error" in result:
+            self.respond_json(
+                {"error": result["error"]},
+                status=HTTPStatus.BAD_REQUEST,
             )
             return
 

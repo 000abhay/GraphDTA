@@ -49,11 +49,17 @@
                   rows="6"
                   placeholder="Enter amino-acid sequence, for example: MKWVTFISLLFLFSSAYS"
                 >MKWVTFISLLFLFSSAYS</textarea>
+                <small class="field-hint" id="protein-hint">
+                  Use uppercase amino-acid letters only. Maximum length: 1000.
+                </small>
               </label>
 
               <label class="input-group input-group--small">
                 <span>Top N Drugs</span>
                 <input id="top-n" name="top_n" type="number" min="1" max="10" value="3" />
+                <small class="field-hint" id="top-n-hint">
+                  Choose a value from 1 to 10.
+                </small>
               </label>
 
               <button type="submit" class="button button-primary button-block">
@@ -90,15 +96,26 @@
             <div class="best-candidate-smiles">
               <p class="eyebrow">Chemical Name / SMILES</p>
               <code id="best-candidate-smiles">No prediction yet.</code>
+              <p class="safety-note" id="best-candidate-safety-note"></p>
+              <div class="safety-grid" id="best-candidate-safety-grid"></div>
             </div>
           </div>
 
           <div class="results-grid" id="results-grid"></div>
 
           <div class="results-table-wrap results-table-wrap--hidden" id="results-table-wrap">
-            <div class="section-heading compact">
-              <p class="eyebrow">Top N Table</p>
-              <h3>Ranked result summary</h3>
+            <div class="results-table-header">
+              <div class="section-heading compact">
+                <p class="eyebrow">Top N Table</p>
+                <h3>Ranked result summary</h3>
+              </div>
+              <button
+                type="button"
+                class="button button-secondary button-download"
+                id="download-csv-button"
+              >
+                Download CSV
+              </button>
             </div>
             <div class="results-table-scroll">
               <table class="results-table">
@@ -107,6 +124,7 @@
                     <th>Rank</th>
                     <th>Predicted Affinity</th>
                     <th>Chemical Name / SMILES</th>
+                    <th>Safety Snapshot</th>
                   </tr>
                 </thead>
                 <tbody id="results-table-body"></tbody>
@@ -121,6 +139,62 @@
             <h3>What this interface currently provides</h3>
           </div>
           <div class="feature-grid" id="feature-grid"></div>
+        </section>
+
+        <section class="section" id="pair-scoring">
+          <div class="section-heading">
+            <p class="eyebrow">Live Pair Scoring</p>
+            <h3>Score one custom protein-drug pair directly</h3>
+          </div>
+
+          <div class="pair-layout">
+            <form id="pair-form" class="pair-form">
+              <label class="input-group">
+                <span>Protein Sequence</span>
+                <textarea
+                  id="pair-protein-sequence"
+                  name="pair_protein_sequence"
+                  rows="5"
+                  placeholder="Enter amino-acid sequence"
+                >MKWVTFISLLFLFSSAYS</textarea>
+                <small class="field-hint" id="pair-protein-hint">
+                  Use uppercase amino-acid letters only. Maximum length: 1000.
+                </small>
+              </label>
+
+              <label class="input-group">
+                <span>Drug SMILES</span>
+                <textarea
+                  id="pair-smiles"
+                  name="pair_smiles"
+                  rows="4"
+                  placeholder="Enter drug SMILES string"
+                >CN1CC2OC(C)(C1OC)n1c3ccccc3c3c4c(c5c6cccc(c6n2c5c31)C(=O)NC4)</textarea>
+                <small class="field-hint" id="pair-smiles-hint">
+                  Enter a valid SMILES string for a single drug molecule.
+                </small>
+              </label>
+
+              <button type="submit" class="button button-primary button-block" id="pair-submit-button">
+                Score Pair
+              </button>
+            </form>
+
+            <div class="pair-result-panel">
+              <div class="results-status" id="pair-results-status">
+                Enter both inputs and click <strong>Score Pair</strong>.
+              </div>
+
+              <div class="pair-score-card pair-score-card--hidden" id="pair-score-card">
+                <p class="eyebrow">Predicted Binding Affinity</p>
+                <strong id="pair-score-value">0.0000</strong>
+                <p class="pair-score-label">Affinity Score (-log10 Kd)</p>
+                <code id="pair-score-smiles"></code>
+                <p class="safety-note" id="pair-safety-note"></p>
+                <div class="safety-grid" id="pair-safety-grid"></div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="section" id="workflow">
