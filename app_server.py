@@ -4,7 +4,8 @@ import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
+from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parent
@@ -34,11 +35,15 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
         self.serve_static(head_only=True)
 
     def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/api/protein-3d":
+            self.handle_protein_3d()
+            return
         self.serve_static(head_only=False)
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in {"/api/rank", "/api/score"}:
+        if path not in {"/api/rank", "/api/score", "/api/drug-3d"}:
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown endpoint.")
             return
 
@@ -49,29 +54,7 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
             self.respond_json({"error": "Invalid JSON payload."}, status=HTTPStatus.BAD_REQUEST)
             return
 
-        protein = payload.get("protein_sequence", "")
-        if not str(protein).strip():
-            self.respond_json({"error": "Protein sequence is required."}, status=HTTPStatus.BAD_REQUEST)
-            return
-
-        if path == "/api/rank":
-            top_n = payload.get("top_n", 3)
-            try:
-                top_n = max(1, min(10, int(top_n)))
-            except (TypeError, ValueError):
-                self.respond_json({"error": "top_n must be a valid integer."}, status=HTTPStatus.BAD_REQUEST)
-                return
-
-            command = [
-                sys.executable,
-                str(ROOT / "rank_drugs.py"),
-                "--protein",
-                str(protein),
-                "--top-n",
-                str(top_n),
-                "--json",
-            ]
-        else:
+        if path == "/api/drug-3d":
             smiles = payload.get("smiles", "")
             if not str(smiles).strip():
                 self.respond_json({"error": "Drug SMILES is required."}, status=HTTPStatus.BAD_REQUEST)
@@ -82,10 +65,48 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
                 "-c",
                 (
                     "import json; "
-                    "from rank_drugs import score_drug_target_pair; "
-                    f"print(json.dumps(score_drug_target_pair({protein!r}, {str(smiles)!r})))"
+                    "from rank_drugs import generate_drug_3d_molblock; "
+                    f"print(json.dumps({{'smiles': {str(smiles)!r}, 'molblock': generate_drug_3d_molblock({str(smiles)!r})}}))"
                 ),
             ]
+        else:
+            protein = payload.get("protein_sequence", "")
+            if not str(protein).strip():
+                self.respond_json({"error": "Protein sequence is required."}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/rank":
+                top_n = payload.get("top_n", 3)
+                try:
+                    top_n = max(1, min(10, int(top_n)))
+                except (TypeError, ValueError):
+                    self.respond_json({"error": "top_n must be a valid integer."}, status=HTTPStatus.BAD_REQUEST)
+                    return
+
+                command = [
+                    sys.executable,
+                    str(ROOT / "rank_drugs.py"),
+                    "--protein",
+                    str(protein),
+                    "--top-n",
+                    str(top_n),
+                    "--json",
+                ]
+            else:
+                smiles = payload.get("smiles", "")
+                if not str(smiles).strip():
+                    self.respond_json({"error": "Drug SMILES is required."}, status=HTTPStatus.BAD_REQUEST)
+                    return
+
+                command = [
+                    sys.executable,
+                    "-c",
+                    (
+                        "import json; "
+                        "from rank_drugs import score_drug_target_pair; "
+                        f"print(json.dumps(score_drug_target_pair({protein!r}, {str(smiles)!r})))"
+                    ),
+                ]
 
         try:
             completed = subprocess.run(
@@ -96,10 +117,12 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
                 check=True,
             )
         except subprocess.CalledProcessError as exc:
-            error_text = exc.stderr.strip() or exc.stdout.strip() or "Ranking failed."
+            raw_error = exc.stderr.strip() or exc.stdout.strip() or "Request failed."
+            error_lines = [line.strip() for line in raw_error.splitlines() if line.strip()]
+            error_text = error_lines[-1] if error_lines else raw_error
             self.respond_json(
                 {
-                    "error": "Failed to rank drugs. Make sure you are running the server inside the GraphDTA environment.",
+                    "error": "Request failed. Make sure you are running the server inside the GraphDTA environment.",
                     "details": error_text,
                 },
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -154,6 +177,32 @@ class GraphDTAHandler(BaseHTTPRequestHandler):
         self.end_headers()
         if not head_only:
             self.wfile.write(data)
+
+    def handle_protein_3d(self):
+        query = parse_qs(urlparse(self.path).query)
+        pdb_id = (query.get("pdb_id") or [""])[0].strip()
+        if not pdb_id:
+            self.respond_json({"error": "PDB ID is required."}, status=HTTPStatus.BAD_REQUEST)
+            return
+
+        pdb_id = pdb_id.lower()
+        if len(pdb_id) != 4 or not pdb_id.isalnum():
+            self.respond_json({"error": "PDB ID must be a 4-character identifier."}, status=HTTPStatus.BAD_REQUEST)
+            return
+
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+        request = Request(url, headers={"User-Agent": "GraphDTA-App/1.0"})
+        try:
+            with urlopen(request, timeout=20) as response:
+                pdb_text = response.read().decode("utf-8")
+        except Exception as exc:
+            self.respond_json(
+                {"error": "Could not fetch protein structure from RCSB PDB.", "details": str(exc)},
+                status=HTTPStatus.BAD_GATEWAY,
+            )
+            return
+
+        self.respond_json({"pdb_id": pdb_id.upper(), "pdb_text": pdb_text})
 
     def log_message(self, format, *args):
         return

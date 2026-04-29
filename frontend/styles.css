@@ -351,6 +351,75 @@ img {
   box-shadow: var(--shadow);
 }
 
+.viewer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.viewer-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(16, 42, 67, 0.08);
+  overflow: hidden;
+}
+
+.viewer-heading {
+  margin-bottom: 12px;
+}
+
+.viewer-heading h3 {
+  margin: 0;
+}
+
+.viewer-canvas {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
+  max-width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(16, 42, 67, 0.1);
+  background:
+    radial-gradient(circle at top left, rgba(15, 107, 91, 0.08), transparent 28%),
+    linear-gradient(180deg, #f7fbff, #eef6fb);
+  isolation: isolate;
+}
+
+.viewer-canvas > div,
+.viewer-canvas canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.viewer-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0.96), rgba(238, 246, 251, 0.94));
+}
+
+.viewer-fallback--hidden {
+  display: none;
+}
+
+.viewer-note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .pair-score-card {
   margin-top: 14px;
   padding: 22px;
@@ -613,6 +682,11 @@ img {
   padding: 20px;
 }
 
+.artifact-card {
+  position: relative;
+  overflow: hidden;
+}
+
 .feature-card {
   min-height: 200px;
 }
@@ -818,6 +892,7 @@ img {
   .results-grid,
   .dual-panel,
   .pair-layout,
+  .viewer-grid,
   .artifact-grid,
   .roadmap-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -838,6 +913,7 @@ img {
   .results-grid,
   .dual-panel,
   .pair-layout,
+  .viewer-grid,
   .artifact-grid,
   .roadmap-list,
   .dataset-grid,

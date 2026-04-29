@@ -197,6 +197,9 @@ const pairForm = document.getElementById("pair-form");
 const pairRunButton = document.getElementById("pair-submit-button");
 const rankingArtifactCard = document.getElementById("ranking-artifact-card");
 const rankingArtifactImage = document.getElementById("ranking-artifact-image");
+const drug3DArtifactCard = document.getElementById("drug-3d-artifact-card");
+const artifactDrugViewerStatus = document.getElementById("artifact-drug-viewer-status");
+const artifactDrugViewerFallback = document.getElementById("artifact-drug-viewer-fallback");
 const artifactPlaceholder = document.getElementById("artifact-placeholder");
 const proteinHint = document.getElementById("protein-hint");
 const topNHint = document.getElementById("top-n-hint");
@@ -219,6 +222,7 @@ const pairSafetyNote = document.getElementById("pair-safety-note");
 const pairSafetyGrid = document.getElementById("pair-safety-grid");
 let latestResults = [];
 let latestProteinSequence = "";
+let artifactDrugViewer = null;
 
 function renderResults(items) {
   resultsGrid.innerHTML = items
@@ -297,6 +301,9 @@ function showArtifact() {
   if (!rankingArtifactCard || !rankingArtifactImage || !artifactPlaceholder) return;
   rankingArtifactImage.src = `/top_drugs_affinity.png?t=${Date.now()}`;
   rankingArtifactCard.classList.remove("artifact-card--hidden");
+  if (drug3DArtifactCard) {
+    drug3DArtifactCard.classList.remove("artifact-card--hidden");
+  }
   artifactPlaceholder.classList.add("artifact-placeholder--hidden");
 }
 
@@ -472,6 +479,9 @@ if (form) {
       renderResultsTable(results);
       resultsStatus.innerHTML = `Showing <strong>${results.length}</strong> ranked drug candidates for the submitted protein sequence.`;
       showArtifact();
+      if (results[0]) {
+        loadBestDrug3D(results[0].smiles);
+      }
     } catch (error) {
       resultsStatus.textContent = error.message.includes("running the server inside the GraphDTA environment")
         ? error.message
@@ -548,4 +558,68 @@ if (pairForm) {
       setPairRunningState(false);
     }
   });
+}
+
+function getOrCreateViewer(elementId, backgroundColor = "#f7fbff") {
+  const element = document.getElementById(elementId);
+  if (!element || typeof $3Dmol === "undefined") return null;
+  const viewer = $3Dmol.createViewer(element, { backgroundColor });
+  viewer.clear();
+  return viewer;
+}
+
+async function loadDrugStructure(smiles) {
+  const response = await fetch("/api/drug-3d", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ smiles }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.details || payload.error || "Could not generate drug 3D structure.");
+  }
+  return payload;
+}
+
+async function loadBestDrug3D(smiles) {
+  if (!artifactDrugViewerStatus) return;
+  if (artifactDrugViewerFallback) {
+    artifactDrugViewerFallback.textContent = "Loading 3D diagram...";
+    artifactDrugViewerFallback.classList.remove("viewer-fallback--hidden");
+  }
+  artifactDrugViewerStatus.innerHTML =
+    '<span class="status-inline"><span class="status-spinner"></span>Loading 3D structure for the best-ranked drug...</span>';
+
+  try {
+    const payload = await loadDrugStructure(smiles);
+    artifactDrugViewer = getOrCreateViewer("artifact-drug-viewer", "#fbfffb");
+
+    if (!artifactDrugViewer) {
+      throw new Error("3D viewer library could not be initialized.");
+    }
+
+    artifactDrugViewer.addModel(payload.molblock, "mol");
+    artifactDrugViewer.setStyle({}, { stick: { radius: 0.18, colorscheme: "greenCarbon" }, sphere: { scale: 0.28 } });
+    artifactDrugViewer.zoomTo();
+    artifactDrugViewer.resize();
+    artifactDrugViewer.render();
+    window.setTimeout(() => {
+      if (artifactDrugViewer) {
+        artifactDrugViewer.resize();
+        artifactDrugViewer.render();
+      }
+    }, 60);
+    if (artifactDrugViewerFallback) {
+      artifactDrugViewerFallback.classList.add("viewer-fallback--hidden");
+    }
+    artifactDrugViewerStatus.textContent = "Showing the 3D conformer for the best-ranked drug candidate.";
+  } catch (error) {
+    if (artifactDrugViewerFallback) {
+      artifactDrugViewerFallback.textContent = "3D diagram is not present for this drug.";
+      artifactDrugViewerFallback.classList.remove("viewer-fallback--hidden");
+    }
+    artifactDrugViewerStatus.textContent = `Drug 3D structure error: ${error.message}`;
+  }
 }

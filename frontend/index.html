@@ -11,6 +11,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
   </head>
   <body>
     <div class="page-shell">
@@ -249,7 +250,7 @@
           </div>
           <div class="artifact-grid artifact-grid--single" id="artifact-grid">
             <div class="artifact-placeholder" id="artifact-placeholder">
-              The ranking chart will appear here after a successful run.
+              The ranking chart and best-candidate drug 3D structure will appear here after a successful run.
             </div>
             <figure class="artifact-card artifact-card--hidden" id="ranking-artifact-card">
               <img id="ranking-artifact-image" src="" alt="Latest ranked drug candidates chart" />
@@ -258,6 +259,20 @@
                 This chart is refreshed only after the prediction finishes successfully.
               </figcaption>
             </figure>
+            <article class="artifact-card artifact-card--hidden" id="drug-3d-artifact-card">
+              <div class="viewer-heading">
+                <p class="eyebrow">Drug 3D Viewer</p>
+                <h3>Best candidate 3D structure</h3>
+              </div>
+              <div class="viewer-canvas" id="artifact-drug-viewer">
+                <div class="viewer-fallback" id="artifact-drug-viewer-fallback">
+                  3D diagram is not present yet.
+                </div>
+              </div>
+              <p class="viewer-note" id="artifact-drug-viewer-status">
+                The 3D structure will load after a successful run.
+              </p>
+            </article>
           </div>
         </section>
       </main>

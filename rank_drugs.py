@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 from rdkit import Chem
-from rdkit.Chem import Crippen, Descriptors, Lipinski, rdMolDescriptors
+from rdkit.Chem import AllChem, Crippen, Descriptors, Lipinski, rdMolDescriptors
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
@@ -109,6 +109,20 @@ def validate_smiles(smiles):
     if Chem.MolFromSmiles(cleaned) is None:
         raise ValueError("Invalid SMILES string.")
     return cleaned
+
+
+def generate_drug_3d_molblock(smiles):
+    smiles = validate_smiles(smiles)
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+
+    status = AllChem.EmbedMolecule(mol, AllChem.ETKDGv3())
+    if status != 0:
+        raise ValueError("Could not generate a 3D conformer for this SMILES string.")
+
+    AllChem.UFFOptimizeMolecule(mol, maxIters=400)
+    mol = Chem.RemoveHs(mol)
+    return Chem.MolToMolBlock(mol)
 
 
 def load_model(device):
